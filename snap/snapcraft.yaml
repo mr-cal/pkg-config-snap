@@ -1,0 +1,39 @@
+name: hello-world
+base: core20
+version: '1.0'
+summary: test pkg-config with miral library
+description: |
+  This snapcraft.yaml is a subset of the ubuntu-frame snapcraft.yaml from https://github.com/MirServer/ubuntu-frame.
+  It contains the minimum code needed to demonstrate the need to augment the `prefix` variable in pkg-config (.pc) files.
+  This behavior is consistent across core18, core20, and core22.
+  It is also consistent when running with `--use-lxd` and `--destructive-mode`.
+grade: stable
+confinement: strict
+
+apps:
+  hello-world:
+    command: usr/local/bin/hello-world
+
+parts:
+  mir-core20:
+    plugin: nil
+    stage-snaps:
+      - mir-core20/latest/edge
+    prime:
+      - -*.h
+      - -*.pc
+      - -share
+
+  hello-world:
+    source: .
+    plugin: cmake
+    after: [mir-core20]
+    build-packages:
+      - pkg-config
+    build-environment:
+    - LD_LIBRARY_PATH: ${SNAPCRAFT_STAGE}/usr/lib/${SNAPCRAFT_ARCH_TRIPLET}
+
+    # removing the sed statement below will prevent cmake from finding the libmiral library
+    override-build: |
+      sed -i 's@/build/mir-core20/stage@@' ${SNAPCRAFT_STAGE}/usr/lib/${SNAPCRAFT_ARCH_TRIPLET}/pkgconfig/*.pc
+      snapcraftctl build
